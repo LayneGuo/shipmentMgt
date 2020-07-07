@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cienet.shipment.repository.ShipOrderRepo">
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, create_by, created_date, last_modified_date,last_modified_by
+    </sql>
+
+    <select id="getShipOrderById" resultType="com.cienet.shipment.web.rest.vm.ShipOrderQueryVo">
+        select
+        <include refid="Base_Column_List"/>
+        from ship_order where id = #{id}
+    </select>
+
+    <select id="getShipOrderPageList" resultType="com.cienet.shipment.web.rest.vm.ShipOrderQueryVo">
+        select
+        <include refid="Base_Column_List"/>
+        from ship_order
+    </select>
+
+</mapper>

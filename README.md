@@ -1,14 +1,10 @@
 # shipmentMgt
 
-This application was generated using JHipster 6.7.0, you can find documentation and help at [https://www.jhipster.tech/documentation-archive/v6.7.0](https://www.jhipster.tech/documentation-archive/v6.7.0).
-
 ## Development
 
 To start your application in the dev profile, run:
 
     ./mvnw
-
-For further instructions on how to develop with JHipster, have a look at [Using JHipster in development][].
 
 ## Building for production
 
@@ -21,8 +17,6 @@ To build the final jar and optimize the shipmentMgt application for production, 
 To ensure everything worked, run:
 
     java -jar target/*.jar
-
-Refer to [Using JHipster in production][] for more details.
 
 ### Packaging as war
 
