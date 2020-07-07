@@ -31,28 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = ShipmentMgtApp.class)
 public class ShipmentResourceIT {
 
-    private static final String DEFAULT_LOGIN = "johndoe";
-    private static final String UPDATED_LOGIN = "jhipster";
-
-    private static final Long DEFAULT_ID = 1L;
-
-    private static final String DEFAULT_PASSWORD = "passjohndoe";
-    private static final String UPDATED_PASSWORD = "passjhipster";
-
-    private static final String DEFAULT_EMAIL = "johndoe@localhost";
-    private static final String UPDATED_EMAIL = "jhipster@localhost";
-
-    private static final String DEFAULT_FIRSTNAME = "john";
-    private static final String UPDATED_FIRSTNAME = "jhipsterFirstName";
-
-    private static final String DEFAULT_LASTNAME = "doe";
-    private static final String UPDATED_LASTNAME = "jhipsterLastName";
-
-    private static final String DEFAULT_IMAGEURL = "http://placehold.it/50x50";
-    private static final String UPDATED_IMAGEURL = "http://placehold.it/40x40";
-
-    private static final String DEFAULT_LANGKEY = "en";
-    private static final String UPDATED_LANGKEY = "fr";
 
     @Autowired
     private ShipmentService shipmentService;
@@ -109,39 +87,25 @@ public class ShipmentResourceIT {
 //        user.setEmail(DEFAULT_EMAIL);
 //    }
 //
-//    @Test
-//    @Transactional
-//    public void createUser() throws Exception {
-//        int databaseSizeBeforeCreate = userRepository.findAll().size();
-//
-//        // Create the User
-//        ManagedUserVM managedUserVM = new ManagedUserVM();
-//        managedUserVM.setLogin(DEFAULT_LOGIN);
-//        managedUserVM.setPassword(DEFAULT_PASSWORD);
-//        managedUserVM.setFirstName(DEFAULT_FIRSTNAME);
-//        managedUserVM.setLastName(DEFAULT_LASTNAME);
-//        managedUserVM.setEmail(DEFAULT_EMAIL);
-//        managedUserVM.setActivated(true);
-//        managedUserVM.setImageUrl(DEFAULT_IMAGEURL);
-//        managedUserVM.setLangKey(DEFAULT_LANGKEY);
-//        managedUserVM.setAuthorities(Collections.singleton(AuthoritiesConstants.USER));
-//
-//        restUserMockMvc.perform(post("/api/users")
-//            .contentType(TestUtil.APPLICATION_JSON)
-//            .content(TestUtil.convertObjectToJsonBytes(managedUserVM)))
-//            .andExpect(status().isCreated());
-//
-//        // Validate the User in the database
-//        List<User> userList = userRepository.findAll();
-//        assertThat(userList).hasSize(databaseSizeBeforeCreate + 1);
-//        User testUser = userList.get(userList.size() - 1);
-//        assertThat(testUser.getLogin()).isEqualTo(DEFAULT_LOGIN);
-//        assertThat(testUser.getFirstName()).isEqualTo(DEFAULT_FIRSTNAME);
-//        assertThat(testUser.getLastName()).isEqualTo(DEFAULT_LASTNAME);
-//        assertThat(testUser.getEmail()).isEqualTo(DEFAULT_EMAIL);
-//        assertThat(testUser.getImageUrl()).isEqualTo(DEFAULT_IMAGEURL);
-//        assertThat(testUser.getLangKey()).isEqualTo(DEFAULT_LANGKEY);
-//    }
+    @Test
+    @Transactional
+    public void testSplit() throws Exception {
+        restUserMockMvc.perform(post("/api/users")
+            .contentType(TestUtil.APPLICATION_JSON)
+            .content(TestUtil.convertObjectToJsonBytes(managedUserVM)))
+            .andExpect(status().isCreated());
+
+        // Validate the User in the database
+        List<User> userList = userRepository.findAll();
+        assertThat(userList).hasSize(databaseSizeBeforeCreate + 1);
+        User testUser = userList.get(userList.size() - 1);
+        assertThat(testUser.getLogin()).isEqualTo(DEFAULT_LOGIN);
+        assertThat(testUser.getFirstName()).isEqualTo(DEFAULT_FIRSTNAME);
+        assertThat(testUser.getLastName()).isEqualTo(DEFAULT_LASTNAME);
+        assertThat(testUser.getEmail()).isEqualTo(DEFAULT_EMAIL);
+        assertThat(testUser.getImageUrl()).isEqualTo(DEFAULT_IMAGEURL);
+        assertThat(testUser.getLangKey()).isEqualTo(DEFAULT_LANGKEY);
+    }
 //
 //    @Test
 //    @Transactional

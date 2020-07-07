@@ -1,7 +1,9 @@
 package com.cienet.shipment.web.rest;
 
+import com.baomidou.mybatisplus.extension.api.ApiController;
 import com.cienet.shipment.service.ShipmentService;
 import com.cienet.shipment.web.rest.errors.BadRequestAlertException;
+import com.cienet.shipment.web.rest.vm.ApiResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,7 @@ import java.net.URISyntaxException;
  */
 @RestController
 @RequestMapping("/api/ship")
-public class ShipmentResource {
+public class ShipmentResource extends ApiController {
 
     private final Logger log = LoggerFactory.getLogger(ShipmentResource.class);
 
@@ -38,9 +40,9 @@ public class ShipmentResource {
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      * @throws BadRequestAlertException {@code 400 (Bad Request)} if the login or email is already in use.
      */
-    @PostMapping("/users")
-    public void test() {
-
+    @GetMapping
+    public ApiResult<Boolean> test() {
+        return ApiResult.ok(true);
     }
 //    public ResponseEntity<User> createUser(@Valid @RequestBody UserDTO userDTO) {
 //        log.debug("REST request to save User : {}", userDTO);
