@@ -1,6 +1,8 @@
 package com.cienet.shipment.web.rest;
 
 import com.cienet.shipment.ShipmentMgtApp;
+import com.cienet.shipment.domain.ShipOrder;
+import com.cienet.shipment.repository.ShipOrderRepo;
 import com.cienet.shipment.service.ShipmentService;
 import com.cienet.shipment.web.rest.errors.GlobalExceptionHandler;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -47,14 +49,14 @@ public class ShipmentResourceIT {
     @Autowired
     private EntityManager em;
 
-    private MockMvc restUserMockMvc;
+    private MockMvc shipmentMockMvc;
 
 
     @BeforeEach
     public void setup() {
         ShipmentResource shipmentResource = new ShipmentResource(shipmentService);
 
-        this.restUserMockMvc = MockMvcBuilders.standaloneSetup(shipmentResource)
+        this.shipmentMockMvc = MockMvcBuilders.standaloneSetup(shipmentResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
             .setMessageConverters(jacksonMessageConverter)
@@ -90,13 +92,14 @@ public class ShipmentResourceIT {
     @Test
     @Transactional
     public void testSplit() throws Exception {
-        restUserMockMvc.perform(post("/api/users")
+
+        shipmentMockMvc.perform(post("/api/ship")
             .contentType(TestUtil.APPLICATION_JSON)
             .content(TestUtil.convertObjectToJsonBytes(managedUserVM)))
             .andExpect(status().isCreated());
 
         // Validate the User in the database
-        List<User> userList = userRepository.findAll();
+        List<ShipOrder> userList = shipmentService.list();
         assertThat(userList).hasSize(databaseSizeBeforeCreate + 1);
         User testUser = userList.get(userList.size() - 1);
         assertThat(testUser.getLogin()).isEqualTo(DEFAULT_LOGIN);
