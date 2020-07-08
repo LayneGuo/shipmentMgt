@@ -1,11 +1,11 @@
 package com.cienet.shipment.web.rest;
 
 import com.cienet.shipment.ShipmentMgtApp;
-import com.cienet.shipment.domain.ShipOrder;
 import com.cienet.shipment.domain.ShipBatch;
+import com.cienet.shipment.domain.ShipOrder;
+import com.cienet.shipment.exception.GlobalExceptionHandler;
 import com.cienet.shipment.service.OrderService;
 import com.cienet.shipment.service.ShipBatchService;
-import com.cienet.shipment.exception.GlobalExceptionHandler;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -65,7 +64,18 @@ public class ShipmentResourceIT {
     @Transactional
     public void testSplitWhenBatchSizeIsNegative() throws Exception {
 
-        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("batchSize", "-1")
+        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("q", "-1")
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.code").value(500))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    @Transactional
+    public void testSplitWhenWrongQuantityThenCode500() throws Exception {
+        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("q", "5")
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(false))
@@ -76,9 +86,10 @@ public class ShipmentResourceIT {
     @Test
     @Transactional
     public void testSplitWhenBatchSize() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("batchSize", "5")
+        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("q", "20.500")
+            .queryParam("q", "29.500")
+            .queryParam("q", "50.000")
             .contentType(TestUtil.APPLICATION_JSON))
-//            .content(TestUtil.convertObjectToJsonBytes(new Order())))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.code").value(200))
@@ -87,7 +98,7 @@ public class ShipmentResourceIT {
         // Validate the ship order and ship batch in the database
         ShipOrder shipOrder = orderService.getById(1);
         List<ShipBatch> shipBatches = shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, 1).list();
-        assertThat(shipBatches).hasSize(5);
+        assertThat(shipBatches).hasSize(3);
         BigDecimal sum = BigDecimal.ZERO;
         for (ShipBatch shipBatch : shipBatches) {
             sum = sum.add(shipBatch.getWeight());
@@ -98,7 +109,7 @@ public class ShipmentResourceIT {
     @Test
     @Transactional
     public void testSplitWhenOrderIdNotExist() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/split/{id}", 10000).queryParam("batchSize", "5")
+        shipmentMockMvc.perform(get("/api/ship/split/{id}", 10000).queryParam("q", "5")
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(false))
@@ -109,9 +120,8 @@ public class ShipmentResourceIT {
     @Test
     @Transactional
     public void testMerge() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/merge/{id}", 3)
+        shipmentMockMvc.perform(get("/api/ship/merge/{id}", 3).queryParam("bId", "3").queryParam("bId", "4")
             .contentType(TestUtil.APPLICATION_JSON))
-//            .content(TestUtil.convertObjectToJsonBytes(new Order())))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.code").value(200))
@@ -120,7 +130,7 @@ public class ShipmentResourceIT {
         // Validate the ship order and ship batch in the database
         ShipOrder shipOrder = orderService.getById(3);
         List<ShipBatch> shipBatches = shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, 3).list();
-        assertThat(shipBatches).hasSize(1);
+        assertThat(shipBatches).hasSize(2);
         BigDecimal sum = BigDecimal.ZERO;
         for (ShipBatch shipBatch : shipBatches) {
             sum = sum.add(shipBatch.getWeight());
@@ -131,11 +141,8 @@ public class ShipmentResourceIT {
     @Test
     @Transactional
     public void tesChangeOrderQuantity() throws Exception {
-        ShipOrder order =new ShipOrder().setWeight(BigDecimal.valueOf(400)).setBatchSize(8);
-        order.setId(3L);
-        shipmentMockMvc.perform(post("/api/ship/change-quantity")
-            .contentType(TestUtil.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(order)))
+        shipmentMockMvc.perform(get("/api/ship/change-quantity/{id}", 3).queryParam("q", "21.111")
+            .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.code").value(200))
@@ -144,7 +151,7 @@ public class ShipmentResourceIT {
         // Validate the ship order and ship batch in the database
         ShipOrder shipOrder = orderService.getById(3);
         List<ShipBatch> shipBatches = shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, 3).list();
-        assertThat(shipBatches).hasSize(8);
+        assertThat(shipBatches).hasSize(3);
         BigDecimal sum = BigDecimal.ZERO;
         for (ShipBatch shipBatch : shipBatches) {
             sum = sum.add(shipBatch.getWeight());

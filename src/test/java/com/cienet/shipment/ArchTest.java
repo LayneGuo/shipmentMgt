@@ -18,12 +18,12 @@ class ArchTest {
 
         noClasses()
             .that()
-                .resideInAnyPackage("com.cienet.shipment.service..")
+            .resideInAnyPackage("com.cienet.shipment.service..")
             .or()
-                .resideInAnyPackage("com.cienet.shipment.repository..")
+            .resideInAnyPackage("com.cienet.shipment.repository..")
             .should().dependOnClassesThat()
-                .resideInAnyPackage("..com.cienet.shipment.web..")
-        .because("Services and repositories should not depend on web layer")
-        .check(importedClasses);
+            .resideInAnyPackage("..com.cienet.shipment.web..")
+            .because("Services and repositories should not depend on web layer")
+            .check(importedClasses);
     }
 }

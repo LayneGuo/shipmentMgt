@@ -1,8 +1,8 @@
 package com.cienet.shipment.exception;
 
 public class DaoException extends ShipmentException {
-    private Integer errorCode;
     private final String message;
+    private Integer errorCode;
 
     public DaoException(String message) {
         super(message);

@@ -1,11 +1,11 @@
 package com.cienet.shipment.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.cienet.shipment.domain.ShipOrder;
 import com.cienet.shipment.domain.ShipBatch;
-import com.cienet.shipment.vo.param.ShipOrderParam;
+import com.cienet.shipment.domain.ShipOrder;
 import com.cienet.shipment.vo.Paging;
 import com.cienet.shipment.vo.ShipOrderQueryVo;
+import com.cienet.shipment.vo.param.ShipOrderParam;
 
 import java.io.Serializable;
 import java.util.List;
@@ -60,13 +60,13 @@ public interface OrderService extends IService<ShipOrder> {
     Paging<ShipOrderQueryVo> getOrderPageList(ShipOrderParam orderQueryParam) throws Exception;
 
     /**
+     * @return List of batch
      * @Param id order
      * @Param batchSize
-     * @return List of batch
      */
-    List<ShipBatch> split(Long id, Integer batchSize) throws Exception;
+    List<ShipBatch> split(Long id, Double[] quantities) throws Exception;
 
-    ShipOrder merge(Long id) throws Exception;
+    List<ShipBatch> merge(Long id, Long[] batchIds) throws Exception;
 
-    ShipOrder changeOrderQuantity(ShipOrder shipOrder) throws Exception;
+    List<ShipBatch> changeOrderQuantity(Long id, Double q) throws Exception;
 }
