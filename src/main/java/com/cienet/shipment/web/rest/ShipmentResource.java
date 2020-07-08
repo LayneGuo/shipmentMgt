@@ -1,7 +1,6 @@
 package com.cienet.shipment.web.rest;
 
 import com.baomidou.mybatisplus.extension.api.ApiController;
-import com.cienet.shipment.domain.ShipBatch;
 import com.cienet.shipment.domain.ShipOrder;
 import com.cienet.shipment.exception.ShipmentException;
 import com.cienet.shipment.service.OrderService;
@@ -50,7 +49,7 @@ public class ShipmentResource extends ApiController {
     /**
      *
      */
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/delete/{id}")
     public ApiResult<Boolean> deletePortRelation(@PathVariable("id") Long id) throws Exception {
         boolean flag = orderService.deleteOrder(id);
         return ApiResult.result(flag);
@@ -79,8 +78,8 @@ public class ShipmentResource extends ApiController {
      * {@code GET  /split}
      * split shipment order to given batch size
      */
-    @GetMapping("/split/{id}")
-    public ApiResult<List<ShipBatch>> split(@PathVariable Long id,
+    @GetMapping("/split/{tradeNo}/{id}")
+    public ApiResult<List<ShipOrder>> split(@PathVariable String tradeNo, @PathVariable Long id,
                                             @RequestParam Double[] q) throws Exception {
         if (q == null || q.length == 0) {
             return ApiResult.fail("batch size should not be null");
@@ -90,28 +89,28 @@ public class ShipmentResource extends ApiController {
             throw new ShipmentException("quantity has wrong value");
         }
 
-        return ApiResult.ok(orderService.split(id, q));
+        return ApiResult.ok(orderService.split(tradeNo, id, q));
     }
 
     /**
      * {@code GET  /merge}
      * split shipment order to given batch size
      */
-    @GetMapping("/merge/{id}")
-    public ApiResult<List<ShipBatch>> merge(@PathVariable Long id, @RequestParam Long[] bId) throws Exception {
-        return ApiResult.ok(orderService.merge(id, bId));
+    @GetMapping("/merge/{tradeNo}")
+    public ApiResult<ShipOrder> merge(@PathVariable String tradeNo, @RequestParam Long[] id) throws Exception {
+        return ApiResult.ok(orderService.merge(tradeNo, id));
     }
 
     /**
      * {@code POST  /change-root-quantity}
      * change quantity for the given order
      */
-    @GetMapping("/change-quantity/{id}")
-    public ApiResult<List<ShipBatch>> changeOrderQuantity(@PathVariable Long id, @RequestParam Double q) throws Exception {
+    @GetMapping("/change-quantity/{tradeNo}")
+    public ApiResult<ShipOrder> changeOrderQuantity(@PathVariable String tradeNo, @RequestParam Double q) throws Exception {
         if (!availableQuantity(q)) {
             throw new ShipmentException("quantity has wrong value quantity =" + q);
         }
-        return ApiResult.ok(orderService.changeOrderQuantity(id, q));
+        return ApiResult.ok(orderService.changeOrderQuantity(tradeNo, q));
     }
 
     private boolean availableQuantities(Double[] quantities) {

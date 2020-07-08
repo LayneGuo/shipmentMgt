@@ -5,7 +5,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, create_by, created_date, last_modified_date,last_modified_by
+        id, trade_no, weight
     </sql>
 
     <select id="getShipOrderById" resultType="com.cienet.shipment.vo.ShipOrderQueryVo">

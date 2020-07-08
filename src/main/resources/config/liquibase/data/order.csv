@@ -1,6 +1,8 @@
-id;weight;batch_size;tag;description
-1;100.000;2;cienet;this is a test shipOrder
-2;200.000;1;cienet;this is a test shipOrder
-3;300.000;3;cienet;this is a test shipOrder
-4;50.000;1;cienet;this is a test shipOrder
-5;30.000;1;cienet;this is a test shipOrder
+id;weight;trade_no
+1;100.000;cienet
+2;200.000;cienet
+3;300.000;cienet
+4;50.000;cienet
+5;30.000;laen
+6;70.000;laen
+7;1000.000;tic

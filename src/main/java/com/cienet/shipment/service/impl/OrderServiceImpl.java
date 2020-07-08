@@ -3,13 +3,11 @@ package com.cienet.shipment.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cienet.shipment.domain.ShipBatch;
 import com.cienet.shipment.domain.ShipOrder;
 import com.cienet.shipment.exception.DaoException;
 import com.cienet.shipment.exception.ShipmentException;
 import com.cienet.shipment.repository.ShipOrderRepo;
 import com.cienet.shipment.service.OrderService;
-import com.cienet.shipment.service.ShipBatchService;
 import com.cienet.shipment.vo.Paging;
 import com.cienet.shipment.vo.ShipOrderQueryVo;
 import com.cienet.shipment.vo.param.ShipOrderParam;
@@ -39,9 +37,6 @@ public class OrderServiceImpl extends BaseServiceImpl<ShipOrderRepo, ShipOrder> 
     @Autowired
     private ShipOrderRepo orderMapper;
 
-    @Autowired
-    private ShipBatchService shipBatchService;
-
     @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean saveOrder(ShipOrder shipOrder) throws Exception {
@@ -68,23 +63,24 @@ public class OrderServiceImpl extends BaseServiceImpl<ShipOrderRepo, ShipOrder> 
 
     @Override
     public Paging<ShipOrderQueryVo> getOrderPageList(ShipOrderParam orderQueryParam) throws Exception {
-        Page page = setPageParam(orderQueryParam, OrderItem.desc("create_time"));
+        Page page = setPageParam(orderQueryParam, OrderItem.desc("trade_no"));
         IPage<ShipOrderQueryVo> iPage = orderMapper.getShipOrderPageList(page, orderQueryParam);
         return new Paging(iPage);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public List<ShipBatch> split(Long id, Double[] quantities) throws Exception {
-        ShipOrder shipOrder =
-            Optional.ofNullable(lambdaQuery().eq(ShipOrder::getId, id).one()).orElseThrow(() -> new DaoException("item not " +
-                "found"));
+    public List<ShipOrder> split(String tradeNo, Long id, Double[] quantities) throws Exception {
+        ShipOrder shipOrder = Optional.ofNullable(lambdaQuery()
+            .eq(ShipOrder::getTradeNo, tradeNo)
+            .eq(ShipOrder::getId, id).one())
+            .orElseThrow(() -> new DaoException("item not found"));
 
         return splitInternal(shipOrder, quantities);
     }
 
     private BigDecimal bdScale(BigDecimal decimal) {
-        return decimal.setScale(SCALE, BigDecimal.ROUND_HALF_UP);
+        return decimal.setScale(SCALE, BigDecimal.ROUND_DOWN);
     }
 
     private boolean checkOrderQuantitySum(BigDecimal total, Double[] shipBatches) {
@@ -95,97 +91,102 @@ public class OrderServiceImpl extends BaseServiceImpl<ShipOrderRepo, ShipOrder> 
         return total.compareTo(sum) == 0;
     }
 
-    private List<ShipBatch> splitInternal(ShipOrder shipOrder, Double[] quantities) throws Exception {
+    private List<ShipOrder> splitInternal(ShipOrder shipOrder, Double[] quantities) throws Exception {
         BigDecimal weight = shipOrder.getWeight();
         log.debug("weight = {}, quantities {}", weight, quantities);
         if (!checkOrderQuantitySum(weight, quantities)) {
             throw new ShipmentException("order quantity is not equal batches");
         }
 
-        if (!shipBatchService.lambdaUpdate().eq(ShipBatch::getOrderId, shipOrder.getId()).remove()) {
+        List<ShipOrder> shipOrders =
+            IntStream.range(0, quantities.length)
+                .mapToObj(i -> new ShipOrder()
+                    .setTradeNo(shipOrder.getTradeNo())
+                    .setWeight(bdScale(BigDecimal.valueOf(quantities[i]))))
+                .collect(Collectors.toList());
+        saveBatch(shipOrders);
+
+        if (!removeById(shipOrder.getId())) {
             throw new DaoException("remove ship batch  fail " + shipOrder.getId());
         }
-
-        List<ShipBatch> shipBatches =
-            IntStream.range(0, quantities.length)
-                .mapToObj(i -> new ShipBatch()
-                    .setOrderId(shipOrder.getId())
-                    .setWeight(bdScale(BigDecimal.valueOf(quantities[i])))
-                    .setSort(i))
-                .collect(Collectors.toList());
-        shipBatchService.saveBatch(shipBatches);
-
-        shipOrder.setBatchSize(quantities.length);
-        if (!updateOrder(shipOrder)) {
-            throw new DaoException("split when updateOrder fail");
-        }
-        return shipBatches;
+        return shipOrders;
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public List<ShipBatch> merge(Long id, Long[] batchIds) throws Exception {
-        ShipOrder shipOrder =
-            Optional.ofNullable(lambdaQuery().eq(ShipOrder::getId, id).one()).orElseThrow(() -> new DaoException("item not " +
-                "found"));
-        mergeInternal(shipOrder, batchIds);
-        return shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, id).list();
+    public ShipOrder merge(String tradeNo, Long[] ids) throws Exception {
+        List<ShipOrder> shipOrders = findOrdersByTradeNo(tradeNo, ids);
+        if (shipOrders.size() <= 0 || ids.length != shipOrders.size()) {
+            throw new DaoException("The some Orders are not exist");
+        }
+        ShipOrder mergeOrder = mergeInternal(shipOrders);
+        if (!removeByIds(Arrays.asList(ids))) {
+            throw new DaoException("remove ship batch  fail " + ids);
+        }
+        return mergeOrder;
     }
 
-    private void mergeInternal(ShipOrder shipOrder, Long[] batchIds) throws Exception {
-        List<ShipBatch> mergeBatches = shipBatchService.lambdaQuery().in(ShipBatch::getId, batchIds).list();
-        if (mergeBatches.size() == 0) {
-            log.warn("there are no batches for order {}", shipOrder);
-            return;
-        }
-        if (!shipBatchService.removeByIds(Arrays.asList(batchIds))) {
-            throw new DaoException("remove ship batch  fail " + shipOrder.getId());
-        }
-        ShipBatch mergeBatch =
-            mergeBatches.stream().reduce((a, b) -> new ShipBatch().setWeight(a.getWeight().add(b.getWeight()))).get();
-        mergeBatch.setOrderId(shipOrder.getId());
-        shipBatchService.save(mergeBatch);
-
-        shipOrder.setBatchSize(shipOrder.getBatchSize() - batchIds.length + 1);
-        if (!updateOrder(shipOrder)) {
+    private ShipOrder mergeInternal(List<ShipOrder> shipOrders) throws Exception {
+        ShipOrder mergeOrder =
+            shipOrders.stream()
+                .reduce((a, b) -> new ShipOrder().setWeight(a.getWeight().add(b.getWeight())).setTradeNo(a.getTradeNo())).get();
+        if (!save(mergeOrder)) {
             throw new DaoException("mergeInternal when updateOrder fail");
         }
+        return mergeOrder;
+    }
+
+    private List<ShipOrder> findOrdersByTradeNo(String tradeNo, Long[] ids) {
+        return Optional.ofNullable(lambdaQuery().eq(ShipOrder::getTradeNo, tradeNo).in(ShipOrder::getId, ids).list()).orElseThrow(() -> new DaoException("item not " +
+            "found"));
+    }
+
+    private List<ShipOrder> findOrdersByTradeNo(String tradeNo) {
+        return Optional.ofNullable(lambdaQuery().eq(ShipOrder::getTradeNo, tradeNo).list()).orElseThrow(() -> new DaoException("item not " +
+            "found"));
+    }
+
+    private BigDecimal sumShipOrdersWeight(List<ShipOrder> shipOrders) {
+        BigDecimal sum = bdScale(BigDecimal.ZERO);
+        for (ShipOrder shipOrder : shipOrders) {
+            sum = sum.add(shipOrder.getWeight());
+        }
+        return sum;
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public List<ShipBatch> changeOrderQuantity(Long id, Double q) throws Exception {
+    public List<ShipOrder> changeOrderQuantity(String tradeNo, Double q) throws Exception {
         if (q <= 0) {
             throw new DaoException(" ship patch size should be greater then 0");
         }
         // query the ship order
-        ShipOrder shipOrder =
-            Optional.ofNullable(lambdaQuery().eq(ShipOrder::getId, id).one()).orElseThrow(() -> new DaoException("item not " +
-                "found"));
+        List<ShipOrder> shipOrders = findOrdersByTradeNo(tradeNo);
+
         BigDecimal newQuantity = bdScale(BigDecimal.valueOf(q));
-        BigDecimal oldQuantity = shipOrder.getWeight();
+        BigDecimal oldQuantity = sumShipOrdersWeight(shipOrders);
+        if (oldQuantity.compareTo(newQuantity) == 0) {
+            return shipOrders;
+        }
 
         // update batches
-        List<ShipBatch> shipBatches = shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, id).list();
-        BigDecimal ratio = newQuantity.divide(oldQuantity, SCALE, BigDecimal.ROUND_HALF_UP);
+        BigDecimal ratio = newQuantity.divide(oldQuantity, SCALE, BigDecimal.ROUND_DOWN);
         BigDecimal sum = bdScale(BigDecimal.ZERO);
-        log.debug("old = {}, new = {}, sum = {}, ratio = {}", oldQuantity, newQuantity, sum, ratio);
-        for (ShipBatch shipBatch : shipBatches) {
-            BigDecimal w = bdScale(shipBatch.getWeight().multiply(ratio));
-            shipBatch.setWeight(w);
+        for (ShipOrder shipOrder : shipOrders) {
+            BigDecimal w = bdScale(shipOrder.getWeight().multiply(ratio));
+            shipOrder.setWeight(w);
             sum = sum.add(w);
         }
+        log.debug("old = {}, new = {}, sum = {}, ratio = {}", oldQuantity, newQuantity, sum, ratio);
         BigDecimal left = newQuantity.subtract(sum);
         log.debug("left = {}", left);
-        ShipBatch sb = shipBatches.get(0);
-        sb.setWeight(sb.getWeight().add(left));
-        shipBatchService.updateBatchById(shipBatches);
-
-        shipOrder.setWeight(newQuantity);
-        if (!updateOrder(shipOrder)) {
+        ShipOrder sd = shipOrders.get(0);
+        sd.setWeight(sd.getWeight().add(left));
+        if (!updateBatchById(shipOrders)) {
             throw new DaoException("update order fail");
         }
-        return shipBatches;
+
+        return shipOrders;
     }
 
 }

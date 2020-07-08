@@ -16,34 +16,12 @@
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="weight" type="decimal(16,3)"/>
-            <column name="batch_size" type="int(8)"/>
-            <column name="description" type="varchar(255)"/>
-            <column name="tag" type="varchar(255)"/>
+            <column name="trade_no" type="varchar(255)"/>
         </createTable>
         <loadData
             file="config/liquibase/data/order.csv"
             separator=";"
             tableName="ship_order">
-            <column name="created_date" type="timestamp"/>
-        </loadData>
-    </changeSet>
-
-    <changeSet author="Laen" id="00000000000002">
-        <createTable tableName="ship_batch">
-            <column name="id" type="bigint" autoIncrement="${autoIncrement}">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="weight" type="decimal(16,3)"/>
-            <column name="sort" type="int(8)"/>
-            <column name="order_id" type="bigint">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-        <loadData
-            file="config/liquibase/data/ship_batch.csv"
-            separator=";"
-            tableName="ship_batch">
-            <column name="created_date" type="timestamp"/>
         </loadData>
     </changeSet>
 </databaseChangeLog>

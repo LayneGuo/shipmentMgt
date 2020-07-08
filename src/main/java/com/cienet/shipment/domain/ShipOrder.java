@@ -11,10 +11,7 @@ import java.math.BigDecimal;
 @Data
 @Accessors(chain = true)
 public class ShipOrder extends BaseEntity {
-    private String description;
-    private String tag;
+    private String tradeNo;
     @NotNull(message = "weight not be null")
     private BigDecimal weight;
-    @NotNull(message = "batch size should not be null")
-    private Integer batchSize;
 }

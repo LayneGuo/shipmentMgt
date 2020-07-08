@@ -1,12 +1,10 @@
 package com.cienet.shipment.web.rest;
 
 import com.cienet.shipment.ShipmentMgtApp;
-import com.cienet.shipment.domain.ShipBatch;
 import com.cienet.shipment.domain.ShipOrder;
 import com.cienet.shipment.exception.GlobalExceptionHandler;
 import com.cienet.shipment.service.OrderService;
-import com.cienet.shipment.service.ShipBatchService;
-import org.assertj.core.data.Percentage;
+import com.cienet.shipment.vo.param.ShipOrderParam;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static com.cienet.shipment.web.rest.TestUtil.convertObjectToJsonBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -31,12 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(classes = ShipmentMgtApp.class)
 public class ShipmentResourceIT {
-
+    private static final String TRADE_NO = "cienet";
 
     @Autowired
     private OrderService orderService;
-    @Autowired
-    private ShipBatchService shipBatchService;
     @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
@@ -62,9 +60,72 @@ public class ShipmentResourceIT {
 
     @Test
     @Transactional
-    public void testSplitWhenBatchSizeIsNegative() throws Exception {
+    public void addShipOrder() throws Exception {
+        shipmentMockMvc.perform(post("/api/ship/add")
+            .queryParam("q", "-1")
+            .content(convertObjectToJsonBytes(new ShipOrder().setWeight(BigDecimal.valueOf(100.000)).setTradeNo("test")))
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(status().isOk());
+    }
 
-        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("q", "-1")
+    @Test
+    @Transactional
+    public void getShipOrderById() throws Exception {
+        shipmentMockMvc.perform(get("/api/ship/info/{id}", 1)
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.id").value(1))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    @Transactional
+    public void updateShipOrderById() throws Exception {
+        ShipOrder shipOrder = orderService.getById(1);
+        shipOrder.setWeight(BigDecimal.valueOf(300.000));
+        shipmentMockMvc.perform(post("/api/ship/update")
+            .content(convertObjectToJsonBytes(shipOrder))
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    @Transactional
+    public void deleteShipOrderById() throws Exception {
+        shipmentMockMvc.perform(delete("/api/ship/delete/{id}", 1)
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    @Transactional
+    public void pageListOfShipOrders() throws Exception {
+        shipmentMockMvc.perform(post("/api/ship/getPageList")
+            .content(convertObjectToJsonBytes(new ShipOrderParam()))
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.total").value(7))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    @Transactional
+    public void testSplitWhenBatchSizeIsNegative() throws Exception {
+        shipmentMockMvc.perform(get("/api/ship/split/{tradeNo}/{id}", TRADE_NO, 1)
+            .queryParam("q", "-1")
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(false))
@@ -75,7 +136,8 @@ public class ShipmentResourceIT {
     @Test
     @Transactional
     public void testSplitWhenWrongQuantityThenCode500() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("q", "5")
+        shipmentMockMvc.perform(get("/api/ship/split/{tradeNo}/{id}", TRADE_NO, 1)
+            .queryParam("q", "5")
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(false))
@@ -85,31 +147,39 @@ public class ShipmentResourceIT {
 
     @Test
     @Transactional
-    public void testSplitWhenBatchSize() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/split/{id}", 1).queryParam("q", "20.500")
+    public void testSplitWithNewQuantities() throws Exception {
+        shipmentMockMvc.perform(get("/api/ship/split/{tradeNo}/{id}", TRADE_NO, 1)
+            .queryParam("q", "20.500")
             .queryParam("q", "29.500")
             .queryParam("q", "50.000")
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").value(hasSize(3)))
             .andExpect(jsonPath("$.code").value(200))
             .andExpect(status().isOk());
+    }
 
-        // Validate the ship order and ship batch in the database
-        ShipOrder shipOrder = orderService.getById(1);
-        List<ShipBatch> shipBatches = shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, 1).list();
-        assertThat(shipBatches).hasSize(3);
-        BigDecimal sum = BigDecimal.ZERO;
-        for (ShipBatch shipBatch : shipBatches) {
-            sum = sum.add(shipBatch.getWeight());
-        }
-        assertThat(sum).isCloseTo(shipOrder.getWeight(), Percentage.withPercentage(0));
+    @Test
+    @Transactional
+    public void testSplitWithNewQuantitiesAndOneTrade() throws Exception {
+        shipmentMockMvc.perform(get("/api/ship/split/{tradeNo}/{id}", "tic", 7)
+            .queryParam("q", "300.000")
+            .queryParam("q", "400.000")
+            .queryParam("q", "300.000")
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data").value(hasSize(3)))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(status().isOk());
     }
 
     @Test
     @Transactional
     public void testSplitWhenOrderIdNotExist() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/split/{id}", 10000).queryParam("q", "5")
+        shipmentMockMvc.perform(get("/api/ship/split/{tradeNo}/{id}", TRADE_NO, 10000)
+            .queryParam("q", "5")
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(false))
@@ -119,29 +189,43 @@ public class ShipmentResourceIT {
 
     @Test
     @Transactional
-    public void testMerge() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/merge/{id}", 3).queryParam("bId", "3").queryParam("bId", "4")
+    public void testMergeThen200() throws Exception {
+        List<ShipOrder> shipOrders = orderService.lambdaQuery().in(ShipOrder::getId, 3, 4).list();
+        assertThat(shipOrders).hasSize(2);
+        BigDecimal sum = BigDecimal.ZERO;
+        for (ShipOrder shipOrder : shipOrders) {
+            sum = sum.add(shipOrder.getWeight());
+        }
+        shipmentMockMvc.perform(get("/api/ship/merge/{tradeNo}", TRADE_NO)
+            .queryParam("id", "3")
+            .queryParam("id", "4")
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.code").value(200))
+            .andExpect(jsonPath("$.data.weight").value(sum.doubleValue()))
             .andExpect(status().isOk());
+    }
 
-        // Validate the ship order and ship batch in the database
-        ShipOrder shipOrder = orderService.getById(3);
-        List<ShipBatch> shipBatches = shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, 3).list();
-        assertThat(shipBatches).hasSize(2);
-        BigDecimal sum = BigDecimal.ZERO;
-        for (ShipBatch shipBatch : shipBatches) {
-            sum = sum.add(shipBatch.getWeight());
-        }
-        assertThat(sum).isCloseTo(shipOrder.getWeight(), Percentage.withPercentage(0));
+    @Test
+    @Transactional
+    public void testMergeWithNotExistIdsThen500() throws Exception {
+        shipmentMockMvc.perform(get("/api/ship/merge/{tradeNo}", TRADE_NO)
+            .queryParam("id", "2")
+            .queryParam("id", "4000")
+            .contentType(TestUtil.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.code").value(500))
+            .andExpect(status().isOk());
     }
 
     @Test
     @Transactional
     public void tesChangeOrderQuantity() throws Exception {
-        shipmentMockMvc.perform(get("/api/ship/change-quantity/{id}", 3).queryParam("q", "21.111")
+        BigDecimal newQuantity = BigDecimal.valueOf(21.111);
+        shipmentMockMvc.perform(get("/api/ship/change-quantity/{tradeNo}", TRADE_NO)
+            .queryParam("q", newQuantity.toString())
             .contentType(TestUtil.APPLICATION_JSON))
             .andDo(MockMvcResultHandlers.print())
             .andExpect(jsonPath("$.success").value(true))
@@ -149,13 +233,11 @@ public class ShipmentResourceIT {
             .andExpect(status().isOk());
 
         // Validate the ship order and ship batch in the database
-        ShipOrder shipOrder = orderService.getById(3);
-        List<ShipBatch> shipBatches = shipBatchService.lambdaQuery().eq(ShipBatch::getOrderId, 3).list();
-        assertThat(shipBatches).hasSize(3);
+        List<ShipOrder> shipOrders = orderService.lambdaQuery().eq(ShipOrder::getTradeNo, TRADE_NO).list();
         BigDecimal sum = BigDecimal.ZERO;
-        for (ShipBatch shipBatch : shipBatches) {
-            sum = sum.add(shipBatch.getWeight());
+        for (ShipOrder shipOrder : shipOrders) {
+            sum = sum.add(shipOrder.getWeight());
         }
-        assertThat(sum).isCloseTo(shipOrder.getWeight(), Percentage.withPercentage(0));
+        assertThat(sum).isEqualByComparingTo(newQuantity);
     }
 }
