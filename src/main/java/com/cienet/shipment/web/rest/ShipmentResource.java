@@ -97,7 +97,7 @@ public class ShipmentResource extends ApiController {
      * change quantity for the given order
      */
     @PostMapping("/change-quantity")
-    public ApiResult<ShipOrder> merge(@RequestBody ShipOrder shipOrder) throws Exception {
-        return ApiResult.ok(orderService.changeRootQuantity(shipOrder));
+    public ApiResult<ShipOrder> changeOrderQuantity(@RequestBody ShipOrder shipOrder) throws Exception {
+        return ApiResult.ok(orderService.changeOrderQuantity(shipOrder));
     }
 }

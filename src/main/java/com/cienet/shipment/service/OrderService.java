@@ -68,5 +68,5 @@ public interface OrderService extends IService<ShipOrder> {
 
     ShipOrder merge(Long id) throws Exception;
 
-    ShipOrder changeRootQuantity(ShipOrder shipOrder) throws Exception;
+    ShipOrder changeOrderQuantity(ShipOrder shipOrder) throws Exception;
 }

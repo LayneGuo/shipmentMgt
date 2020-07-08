@@ -128,7 +128,7 @@ public class OrderServiceImpl extends BaseServiceImpl<ShipOrderRepo, ShipOrder> 
     }
 
     @Override
-    public ShipOrder changeRootQuantity(ShipOrder shipOrder) throws Exception {
+    public ShipOrder changeOrderQuantity(ShipOrder shipOrder) throws Exception {
         if (!updateOrder(shipOrder)) {
             throw new DaoException("changeRootQuantity fail");
         }
