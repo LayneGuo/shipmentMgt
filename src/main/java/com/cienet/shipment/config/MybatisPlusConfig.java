@@ -20,6 +20,7 @@ public class MybatisPlusConfig {
 
     /**
      * mybatios-plus乐观锁插件
+     *
      * @return
      */
     @Bean

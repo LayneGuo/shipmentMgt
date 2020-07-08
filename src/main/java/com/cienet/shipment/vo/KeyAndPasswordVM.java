@@ -1,4 +1,4 @@
-package com.cienet.shipment.web.rest.vm;
+package com.cienet.shipment.vo;
 
 /**
  * View Model object for storing the user's key and password.

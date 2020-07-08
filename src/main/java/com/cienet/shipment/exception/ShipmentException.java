@@ -1,8 +1,8 @@
-package com.cienet.shipment.web.rest.errors;
+package com.cienet.shipment.exception;
 
-public class ShipmentException extends RuntimeException{
+public class ShipmentException extends RuntimeException {
     private Integer errorCode;
-    private String message;
+    private final String message;
 
     public ShipmentException(String message) {
         super(message);

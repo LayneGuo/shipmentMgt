@@ -10,7 +10,6 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,9 +22,9 @@ import java.time.format.DateTimeFormatter;
 
 @Configuration
 public class JacksonConfiguration {
+    public static final String TimeFormatValue = "HH:mm:ss";
     @Value("${spring.jackson.date-format:yyyy-MM-dd}")
     private String dateFormatValue;
-    public static final String TimeFormatValue = "HH:mm:ss";
     @Value("${spring.jackson.joda-date-time-format:yyyy-MM-dd HH:mm:ss}")
     private String dateTimeFormatValue;
 
@@ -51,8 +50,10 @@ public class JacksonConfiguration {
         objectMapper.registerModule(javaTimeModule);
         return objectMapper;
     }
+
     /**
      * Support for Java date and time API.
+     *
      * @return the corresponding Jackson module.
      */
     @Bean

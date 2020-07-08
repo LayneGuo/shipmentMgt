@@ -1,12 +1,19 @@
 package com.cienet.shipment.domain;
 
 import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+import lombok.experimental.Accessors;
 
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
-@ApiModel(value = "SysDict对象", description = "系统字典表")
-public class ShipOrder  extends BaseEntity{
+@ApiModel(value = "shipment order")
+@Data
+@Accessors(chain = true)
+public class ShipOrder extends BaseEntity {
+    private String description;
+    private String tag;
+    @NotNull(message = "weight not be null")
     private BigDecimal weight;
     private Integer batchSize;
 }

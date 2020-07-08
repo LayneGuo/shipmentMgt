@@ -1,4 +1,4 @@
-package com.cienet.shipment.web.rest.vm;
+package com.cienet.shipment.vo;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;

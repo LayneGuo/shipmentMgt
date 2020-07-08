@@ -1,4 +1,4 @@
-package com.cienet.shipment.web.rest.errors;
+package com.cienet.shipment.exception;
 
 public class BadRequestAlertException extends ShipmentException {
 

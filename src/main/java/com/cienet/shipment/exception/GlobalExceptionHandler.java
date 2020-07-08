@@ -1,7 +1,7 @@
-package com.cienet.shipment.web.rest.errors;
+package com.cienet.shipment.exception;
 
-import com.cienet.shipment.web.rest.vm.ApiCode;
-import com.cienet.shipment.web.rest.vm.ApiResult;
+import com.cienet.shipment.vo.ApiCode;
+import com.cienet.shipment.vo.ApiResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -29,7 +29,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     *
      * @param exception
      * @return
      */
@@ -41,7 +40,6 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     *
      * @param exception
      * @return
      */
