@@ -15,5 +15,6 @@ public class ShipOrder extends BaseEntity {
     private String tag;
     @NotNull(message = "weight not be null")
     private BigDecimal weight;
+    @NotNull(message = "batch size should not be null")
     private Integer batchSize;
 }
