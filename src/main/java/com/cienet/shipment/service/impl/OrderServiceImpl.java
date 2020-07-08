@@ -101,16 +101,7 @@ public class OrderServiceImpl extends BaseServiceImpl<ShipOrderRepo, ShipOrder> 
         ShipOrder shipOrder =
             Optional.ofNullable(lambdaQuery().eq(ShipOrder::getId, id).one()).orElseThrow(() -> new DaoException("item not " +
                 "found"));
-        if (!shipBatchService.lambdaUpdate().eq(ShipBatch::getOrderId, id).remove()) {
-            throw new DaoException("remove ship batch  fail " + id);
-        }
-
-        shipBatchService.save(new ShipBatch().setOrderId(id).setSort(1).setWeight(shipOrder.getWeight()));
-
-        shipOrder.setBatchSize(1);
-        if (!updateOrder(shipOrder)) {
-            throw new DaoException("split when updateOrder fail");
-        }
+        mergeInternal(shipOrder);
         return shipOrder;
     }
 
@@ -123,7 +114,7 @@ public class OrderServiceImpl extends BaseServiceImpl<ShipOrderRepo, ShipOrder> 
 
         shipOrder.setBatchSize(1);
         if (!updateOrder(shipOrder)) {
-            throw new DaoException("split when updateOrder fail");
+            throw new DaoException("mergeInternal when updateOrder fail");
         }
     }
 
