@@ -8,6 +8,8 @@ import com.cienet.shipment.vo.ApiResult;
 import com.cienet.shipment.vo.Paging;
 import com.cienet.shipment.vo.ShipOrderQueryVo;
 import com.cienet.shipment.vo.param.ShipOrderParam;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/ship")
+@Api(tags = "Shipment Management API")
 public class ShipmentResource extends ApiController {
 
     private final Logger log = LoggerFactory.getLogger(ShipmentResource.class);
@@ -79,6 +82,7 @@ public class ShipmentResource extends ApiController {
      * split shipment order to given batch size
      */
     @GetMapping("/split/{tradeNo}/{id}")
+    @ApiOperation("split specified shipments")
     public ApiResult<List<ShipOrder>> split(@PathVariable String tradeNo, @PathVariable Long id,
                                             @RequestParam Double[] q) throws Exception {
         if (q == null || q.length == 0) {
@@ -97,6 +101,7 @@ public class ShipmentResource extends ApiController {
      * split shipment order to given batch size
      */
     @GetMapping("/merge/{tradeNo}")
+    @ApiOperation("merge shipment")
     public ApiResult<ShipOrder> merge(@PathVariable String tradeNo, @RequestParam Long[] id) throws Exception {
         return ApiResult.ok(orderService.merge(tradeNo, id));
     }
@@ -106,6 +111,7 @@ public class ShipmentResource extends ApiController {
      * change quantity for the given order
      */
     @GetMapping("/change-quantity/{tradeNo}")
+    @ApiOperation("change trade quantity")
     public ApiResult<ShipOrder> changeOrderQuantity(@PathVariable String tradeNo, @RequestParam Double q) throws Exception {
         if (!availableQuantity(q)) {
             throw new ShipmentException("quantity has wrong value quantity =" + q);
