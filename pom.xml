@@ -188,7 +188,7 @@
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <!-- Inherited version from Spring Boot can't be used because of regressions -->
-            <version>1.2.62</version>
+            <version>1.2.83</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
